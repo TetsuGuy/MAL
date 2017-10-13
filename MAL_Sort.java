@@ -83,7 +83,7 @@ public class MAL_Sort extends JFrame{
                         	else
                         		score = Float.valueOf(inputLine);
                         	
-                        	text.setText(line.subSequence(line.lastIndexOf("/")+1, line.length())+"  ("+Float.valueOf(inputLine)+")");
+                        	text.setText(line.subSequence(line.lastIndexOf("/")+1, line.length())+"  ("+score+")");
                         	
                         }
                         
