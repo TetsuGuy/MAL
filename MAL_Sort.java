@@ -1,33 +1,78 @@
 package animeLinkSorter;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Font;
+import java.awt.GridLayout;
+import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import javax.swing.JButton;
+import javax.imageio.ImageIO;
+import javax.swing.BoxLayout;
+import javax.swing.ImageIcon;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
 import javax.swing.JProgressBar;
+import javax.swing.SwingConstants;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
+
 @SuppressWarnings("serial")
 public class MAL_Sort extends JFrame{
     public static void main(String [] args) throws IOException, ClassNotFoundException, InstantiationException, IllegalAccessException, UnsupportedLookAndFeelException {
     	UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
     	MAL_Sort 
     		fenster = new MAL_Sort();
-	    	fenster.setSize(500, 100);
+	    	fenster.setSize(500, 450);
 	    	fenster.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 	    	fenster.setTitle("AniSort - sort MyAnimelist Watchlists");
 	    	fenster.setVisible(true);
 	    	fenster.setResizable(false);
-    	JButton 
-    		text = new JButton("Program started. Choose html file to process your list...");
+	    	fenster.setBackground(Color.white);
+	    	fenster.getContentPane().setBackground(Color.white);
+	    JPanel 
+	    	toppanel = new JPanel();
+	    	toppanel.setSize(fenster.getWidth(), 100);
+	    	fenster.getContentPane().add(toppanel, BorderLayout.NORTH);
+	   
+	   JPanel 
+	    	centerpanel = new JPanel();
+	    	centerpanel.setSize(fenster.getWidth(), 200);
+	    	BoxLayout grid = new BoxLayout(centerpanel,BoxLayout.Y_AXIS);
+	    	centerpanel.setLayout(grid);
+	    JLabel 
+	    	textGenre = new JLabel("");
+		    textGenre.setFont(new Font("Arial",Font.BOLD, 15));
+		    textGenre.setAlignmentX(CENTER_ALIGNMENT);
+		    textGenre.setHorizontalAlignment(textGenre.CENTER);	    
+	    JLabel 
+    		textScore = new JLabel("");
+	    	textScore.setFont(new Font("Arial",Font.BOLD, 15));
+	    	textScore.setAlignmentX(CENTER_ALIGNMENT);
+	    	textScore.setHorizontalAlignment(textScore.CENTER);
+    	JLabel 
+    		text = new JLabel("Program started. Choose html file to process your list...");
     		text.setFont(new Font("Arial",Font.BOLD, 15));
-    		fenster.getContentPane().add(text, BorderLayout.CENTER);
+    		toppanel.add(text);
+    	
+    	
+    	
+    	BufferedImage imagePic = new BufferedImage(500,400,BufferedImage.TYPE_3BYTE_BGR);
+    	ImageIcon
+    		imageIcon = new ImageIcon(imagePic);
+    	JLabel label = new JLabel();
+    		label.setIcon(imageIcon);
+    		label.setAlignmentY(CENTER_ALIGNMENT);
+    		label.setAlignmentX(CENTER_ALIGNMENT);
+    		
+    		centerpanel.add(textScore);centerpanel.add(label);centerpanel.add(textGenre);    	
+    	fenster.getContentPane().add(centerpanel, BorderLayout.CENTER);	
+    	
     	JProgressBar 
     		loader = new JProgressBar();  
 	    	loader.setValue(0);
@@ -44,6 +89,8 @@ public class MAL_Sort extends JFrame{
         	liste 	= new ArrayList<Entry>();
         String 
         	line 	= null;
+        String
+        	genreTag ="";
         
         try {        
             //Preprocess List, nr holds the count of links 
@@ -70,7 +117,7 @@ public class MAL_Sort extends JFrame{
                     String inputLine = "";
                     String image = "";
                     Float score= null;
-                    
+                    ArrayList<String> tags = new ArrayList<String>();
                     while ((inputLine = in2.readLine()) != null)
                     {
                         if(score==null && inputLine.contains("data-title=\"score\""))
@@ -83,19 +130,50 @@ public class MAL_Sort extends JFrame{
                         	else
                         		score = Float.valueOf(inputLine);
                         	
-                        	text.setText(line.subSequence(line.lastIndexOf("/")+1, line.length())+"  ("+score+")");
                         	
                         }
                         
                         if(inputLine.contains("/pics") && image == ""){
                         	String raw = in2.readLine();
                         	image= raw.substring(raw.indexOf("https://myanimelist.cdn-dena.com/images/"), raw.indexOf("alt")-2);
-                        	
+                        	URL url = new URL(image);
+                        	BufferedImage c = ImageIO.read(url);
+                        	imageIcon = new ImageIcon(c);
+                        	//fenster.setSize(c.getWidth(), c.getHeight());           	
                         }
+                        
+                        if(inputLine.contains(">Genres:<"))
+                        {
+                        	while(!inputLine.contains("</div>"))
+                        	{
+                        		inputLine=in2.readLine();
+                        		//Find all tags
+                        		if(inputLine.contains("title="))
+                        		{
+                        			parseTags(inputLine);
+                        			String tag = inputLine.substring(inputLine.indexOf(">")+1,inputLine.indexOf("</a"));
+                        			System.out.println("Tag found:"+tag+".");
+                        			genreTag=tag;
+                        			tags.add(tag);
+                        		}
+                        	}
+                        }
+                        
                     }
-                	liste.add(new Entry(line, score, image));
-                    System.out.println("Entry:"+score+" "+line+" "+" "+image);                  
-
+                	liste.add(new Entry(line, score, image,tags));
+                    System.out.println("Entry:"+score+" "+line+" "+" "+image);
+                    String title = ((String) line.subSequence(line.lastIndexOf("/")+1, line.length())).replace('_', ' ');
+                    title=title.replace('%', ' ');
+                	label.setIcon(imageIcon);
+                	label.setHorizontalAlignment(SwingConstants.CENTER); 
+                    text.setFont(new Font("Arial", Font.BOLD, 20));
+                    text.setHorizontalAlignment(SwingConstants.CENTER);
+                    text.setVerticalAlignment(SwingConstants.CENTER);
+                    
+                    text.setText(title);
+                    textScore.setText("Score: "+score);
+                    textGenre.setText(genreTag);
+                    
                     in2.close();
             	} loader.setValue((int)100*done/nr);
             } bufferedReader.close();                  
@@ -117,5 +195,10 @@ public class MAL_Sort extends JFrame{
 		    writer.close();
 		
 		fenster.dispose();
+    }
+    
+    private static void parseTags(String s){
+    	//Until s is not empty, get every tag there is in there
+    	//Until s contains no "title" anymore
     }
 }
